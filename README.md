@@ -1,5 +1,7 @@
 # AegisLM Mistral Small 4 119B
 
+Private repository: `Malicious-code-detection-project/AegisLM-Mistral-Small-4-119B`
+
 B200 두 장에서 `mistralai/Mistral-Small-4-119B-2603`을 BF16 LoRA + FSDP2로
 파인튜닝하고, adapter lifecycle·blind evaluation·vLLM serving을 검증하는 독립
 프로젝트다.
