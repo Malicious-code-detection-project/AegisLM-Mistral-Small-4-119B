@@ -1,0 +1,10 @@
+[project]
+name = "aegislm-mistral-vllm"
+version = "0.1.0"
+requires-python = "==3.12.3"
+dependencies = [
+    "vllm",
+]
+
+[tool.uv.sources]
+vllm = { url = "https://github.com/vllm-project/vllm/releases/download/v0.26.0/vllm-0.26.0-cp38-abi3-manylinux_2_28_x86_64.whl" }

@@ -1,0 +1,106 @@
+# Model
+base_model: model/mistral-small-4-119b-2603-bf16-local
+trust_remote_code: false
+
+# Dataset and Mistral template
+chat_template: tokenizer_default
+chat_template_kwargs:
+  reasoning_effort: "none"
+
+datasets:
+  - path: data/processed/phase-f-source-decision-v1/train.jsonl
+    ds_type: json
+    split: train
+    type: chat_template
+    field_messages: messages
+    message_property_mappings:
+      role: role
+      content: content
+    roles_to_train:
+      - assistant
+    train_on_eos: turn
+
+val_set_size: 0.0
+
+dataset_prepared_path: artifact/mistral-small-4-119b/prepared/g1-bf16-lora-fsdp2-20260818-002
+output_dir: artifact/mistral-small-4-119b/runs/g1-bf16-lora-fsdp2-20260818-002
+
+# Sequence construction
+sequence_len: 2048
+sample_packing: false
+eval_sample_packing: false
+pad_to_sequence_len: false
+train_on_inputs: false
+
+# BF16 LoRA: no quantization keys
+adapter: lora
+
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.0
+
+# Text backbone only; vision_tower and router are excluded.
+lora_target_modules:
+  - self_attn.q_a_proj
+  - self_attn.q_b_proj
+  - self_attn.kv_a_proj_with_mqa
+  - self_attn.kv_b_proj
+  - self_attn.o_proj
+  - mlp.shared_experts.gate_proj
+  - mlp.shared_experts.up_proj
+  - mlp.shared_experts.down_proj
+
+# Fused MoE expert parameters
+lora_target_parameters:
+  - mlp.experts.gate_up_proj
+  - mlp.experts.down_proj
+
+# One-step G1 canary
+max_steps: 1
+num_epochs: 1
+micro_batch_size: 1
+gradient_accumulation_steps: 1
+eval_batch_size: 1
+
+learning_rate: 0.0001
+optimizer: adamw_torch_fused
+lr_scheduler: constant
+warmup_steps: 0
+weight_decay: 0.0
+max_grad_norm: 1.0
+
+# Precision and memory
+bf16: true
+fp16: false
+tf32: true
+flash_attention: true
+
+gradient_checkpointing: true
+gradient_checkpointing_kwargs:
+  use_reentrant: false
+
+experimental_skip_move_to_device: true
+
+# Modern FSDP2
+fsdp_version: 2
+fsdp_config:
+  offload_params: false
+  cpu_ram_efficient_loading: true
+  auto_wrap_policy: TRANSFORMER_BASED_WRAP
+  transformer_layer_cls_to_wrap: Mistral4DecoderLayer
+  state_dict_type: FULL_STATE_DICT
+  reshard_after_forward: true
+  use_orig_params: true
+  activation_checkpointing: false
+  sync_module_states: true
+
+# Reproducibility
+seed: 20260728
+data_seed: 20260728
+
+# Logging and adapter save
+logging_steps: 1
+save_strategy: steps
+save_steps: 1
+save_total_limit: 1
+save_safetensors: true
