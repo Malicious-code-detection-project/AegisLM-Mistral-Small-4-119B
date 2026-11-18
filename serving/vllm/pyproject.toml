@@ -3,6 +3,7 @@ name = "aegislm-mistral-vllm"
 version = "0.1.0"
 requires-python = "==3.12.3"
 dependencies = [
+    "bitsandbytes>=0.50.2",
     "vllm",
 ]
 
