@@ -2,7 +2,7 @@
 
 # AegisLM Mistral Small 4 119B
 
-**B200 2장에서 Mistral Small 4(119B)를 BF16 LoRA + FSDP2로 파인튜닝하고, blind 평가와 vLLM 서빙까지 확인한 실험 저장소**
+**B200 2장에서 Mistral Small 4(119B)를 BF16 LoRA + FSDP2로 파인튜닝하고, 저장·재로드와 vLLM 서빙까지 확인한 실험 저장소**
 
 [![Python](https://img.shields.io/badge/python-3.12.3-3776AB?logo=python&logoColor=white)](pyproject.toml)
 [![uv](https://img.shields.io/badge/uv-locked-DE5FE9?logo=uv&logoColor=white)](uv.lock)
@@ -18,7 +18,7 @@
 </div>
 
 B200 두 장에서 `mistralai/Mistral-Small-4-119B-2603`을 BF16 LoRA + FSDP2로 파인튜닝하고,
-adapter lifecycle·blind evaluation·vLLM serving을 검증하는 독립 프로젝트입니다.
+adapter lifecycle·vLLM serving을 검증하는 독립 프로젝트입니다. blind 500건 평가 결과는 평가 세트 중복으로 무효입니다([현재 상태](#현재-상태)).
 과제는 C/C++ 소스 함수에 대한 source-decision 판단이며, 모델은
 `{"assessment": "present" | "not_observed" | "uncertain"}` 형식의 JSON 한 줄로 답합니다.
 
@@ -223,7 +223,7 @@ bash scripts/check_serving.sh
 `serving/vllm` 환경에서 공식 FP8 원본(`model/mistral-small-4-119b-2603`)을 `--tensor-parallel-size 2`,
 `--max-model-len 2048`, served model name `mistral-native-base-smoke`로 `127.0.0.1:8000`에 띄웁니다.
 compilation cache는 `serving/vllm/.runtime-cache/`에, IPC용 임시 폴더는 짧은 경로(`~/.vllm-tmp`)에 둡니다.
-Chat Completions 요청을 보내는 스크립트는 저장소에 없습니다. G3 LoRA adapter를 vLLM에 붙이는 것은 아직 확인하지 않았습니다.
+Chat Completions 요청을 보내는 스크립트는 저장소에 없습니다. G3 LoRA adapter를 vLLM에 붙이는 시도(2026-08-25)는 모듈 구조 불일치로 BLOCK됐습니다([현재 상태](#현재-상태)).
 
 ## 구조
 
@@ -239,12 +239,12 @@ flowchart TD
     G2 --> RL["저장·재로드 추론<br/>reload_inference.sh"]
     G2 --> G3["G3 100-step<br/>g3_artifact.sh"]
     G3 --> PR["blind 500 예측<br/>predict.sh"]
-    PR --> SC["절대평가 gate<br/>blind_absolute_test.sh"]
+    PR --> SC["절대평가 gate<br/>blind_absolute_test.sh<br/>결과 무효: 평가 세트 중복"]
     HF --> SV["vLLM 0.26.0 TP2 서빙<br/>check_serving.sh"]
-    G3 -.->|"다음 gate: LoRA attach"| SV
+    G3 -.->|"LoRA attach: BLOCK"| SV
 ```
 
-학습·평가 단계는 루트 uv 프로젝트에서, 서빙은 `serving/vllm` 프로젝트에서 돕니다. 점선은 아직 확인하지 않은 단계입니다.
+학습·평가 단계는 루트 uv 프로젝트에서, 서빙은 `serving/vllm` 프로젝트에서 돕니다. 점선은 시도했지만 막힌 단계입니다.
 
 ## 결과
 
@@ -258,9 +258,9 @@ flowchart TD
 | BF16 LoRA + FSDP2 G1 1-step | PASS | `configs/g1-bf16-lora-fsdp2-1step*.yaml` |
 | G2 10-step save/reload | PASS | `reload_inference.sh` |
 | G3 100-step | PASS | `g3_artifact.sh` |
-| G3 source-decision fresh blind 500건 자동 gate | PASS | `predict.sh`, `blind_absolute_test.sh` |
+| G3 source-decision fresh blind 500건 자동 gate | **무효** (당시 PASS. 2026-09-28 감사에서 평가 세트 500건 중 498건이 학습·검증 데이터와 같은 코드로 확인됨, [기록](https://github.com/Malicious-code-detection-project/AegisLM-B200#평가-세트-중복-감사-2026-09-28)) | `predict.sh`, `blind_absolute_test.sh` |
 | official native FP8 base의 vLLM 0.26.0 TP2 Chat Completions smoke | PASS | `check_serving.sh` |
-| vLLM에서 G3 LoRA adapter attach | 다음 compatibility gate (미확인) | — |
+| vLLM에서 G3 LoRA adapter attach | **BLOCK** (2026-08-25. HF/Axolotl의 분리된 `q_a_proj`·`kv_a_proj_with_mqa`와 vLLM native `fused_qkv_a_proj`의 모듈 구조 불일치) | — |
 
 ### 판정 기준
 
