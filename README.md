@@ -2,7 +2,7 @@
 
 # AegisLM Mistral Small 4 119B
 
-**B200 2장에서 Mistral Small 4(119B)를 BF16 LoRA + FSDP2로 파인튜닝하고, 저장·재로드와 vLLM 서빙까지 확인한 실험 저장소**
+**B200 2장에서 Mistral Small 4(119B)를 BF16 LoRA + FSDP2로 파인튜닝하고, adapter 저장·재로드와 원본 모델 vLLM 서빙까지 확인한 실험 저장소**
 
 [![Python](https://img.shields.io/badge/python-3.12.3-3776AB?logo=python&logoColor=white)](pyproject.toml)
 [![uv](https://img.shields.io/badge/uv-locked-DE5FE9?logo=uv&logoColor=white)](uv.lock)
